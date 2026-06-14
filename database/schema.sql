@@ -1,0 +1,37 @@
+-- =============================================================================
+-- meteo_db — схема на базата (източник на истина)
+-- =============================================================================
+--
+-- Как да попълниш този файл:
+--
+-- 1) В phpMyAdmin или MySQL CLI изпълни:
+--      USE meteo_db;
+--      SHOW TABLES;
+--
+-- 2) За всяка таблица:
+--      DESCRIBE името_на_таблицата;
+--    или
+--      SHOW CREATE TABLE името_на_таблицата;
+--
+-- 3) Постави CREATE TABLE дефинициите по-долу.
+--
+-- 4) За всяка таблица създай в PHP:
+--      src/Dto/ИмеDto.php       (копирай от src/Dto/TemplateDto.php.example)
+--      src/Dao/ИмеDao.php       (копирай от src/Dao/TemplateDao.php.example)
+--      api/таблица/index.php    (копирай от api/phenomena/index.php)
+--
+-- Именуване на класове (таблица -> DTO -> DAO):
+--   phenomena     -> PhenomenonDto  -> PhenomenonDao     (вече създадени)
+--   locations     -> LocationDto    -> LocationDao
+--   observations  -> ObservationDto -> ObservationDao
+--
+-- =============================================================================
+
+-- TODO: постави CREATE TABLE дефинициите си по-долу.
+-- Пример (изтрий и замени с реалните си таблици):
+
+-- CREATE TABLE IF NOT EXISTS phenomena (
+--     id          INT AUTO_INCREMENT PRIMARY KEY,
+--     name        VARCHAR(255) NOT NULL,
+--     description TEXT
+-- );

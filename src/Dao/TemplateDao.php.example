@@ -1,0 +1,20 @@
+<?php
+
+/**
+ * ШАБЛОН — копирай този файл за всяка нова таблица.
+ *
+ * Стъпки:
+ *   1. Копирай като src/Dao/ИмеDao.php  (напр. LocationDao.php)
+ *   2. Преименувай класа (напр. class LocationDao)
+ *   3. Смени $table и $dtoClass
+ *   4. Създай api/име-на-таблицата/index.php (копирай от api/phenomena/index.php)
+ *
+ * Именуване:
+ *   таблица locations    -> LocationDao,    $table = 'locations'
+ *   таблица observations -> ObservationDao, $table = 'observations'
+ */
+class ExampleDao extends BaseDao
+{
+    protected string $table = 'example_table';
+    protected string $dtoClass = ExampleDto::class;
+}

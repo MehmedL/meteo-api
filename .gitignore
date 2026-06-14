@@ -1,0 +1,19 @@
+# Локални настройки с креденшъли (DB host/user/password)
+config/database.php
+
+# Логове
+*.log
+
+# OS файлове
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Редактор / IDE
+.vscode/
+.idea/
+*.swp
+
+# Временни / архиви
+*.tmp
+*.bak
