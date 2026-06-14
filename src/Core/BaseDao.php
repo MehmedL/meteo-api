@@ -38,4 +38,45 @@ abstract class BaseDao
 
         return ($this->dtoClass)::fromRow($row);
     }
+
+    /**
+     * Вмъква един ред. $data е масив колона => стойност.
+     * Връща id-то на новия ред (lastInsertId).
+     */
+    public function insert(array $data): int
+    {
+        $columns = array_keys($data);
+        $cols = implode(', ', array_map(fn (string $c) => "`{$c}`", $columns));
+        $params = implode(', ', array_map(fn (string $c) => ":{$c}", $columns));
+
+        $stmt = $this->db->prepare("INSERT INTO `{$this->table}` ({$cols}) VALUES ({$params})");
+        $stmt->execute($data);
+
+        return (int) $this->db->lastInsertId();
+    }
+
+    /**
+     * Вмъква много редове в една транзакция. Връща броя вмъкнати редове.
+     */
+    public function insertMany(array $rows): int
+    {
+        if ($rows === []) {
+            return 0;
+        }
+
+        $this->db->beginTransaction();
+        try {
+            $count = 0;
+            foreach ($rows as $row) {
+                $this->insert($row);
+                $count++;
+            }
+            $this->db->commit();
+
+            return $count;
+        } catch (Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
 }

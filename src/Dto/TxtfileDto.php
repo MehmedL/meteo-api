@@ -5,8 +5,8 @@ class TxtfileDto
     public static function fromRow(object $row): array
     {
         return [
-            'vfp'     => (int) $row->vfp,
-            'frame'   => (int) $row->frame,
+            'vfp'     => (int) $row->VFP,
+            'frame'   => (int) $row->Frame,
             'avR'     => (float) $row->avR,
             'avG'     => (float) $row->avG,
             'avB'     => (float) $row->avB,
@@ -15,8 +15,8 @@ class TxtfileDto
             'dvG'     => (float) $row->dvG,
             'dvB'     => (float) $row->dvB,
             'dvDCP'   => (float) $row->dvDCP,
-            'intens'  => (float) $row->intens,
-            'satur'   => (float) $row->satur,
+            'intens'  => (float) $row->Intens,
+            'satur'   => (float) $row->Satur,
             'stHUE'   => (int) $row->stHUE,
             'stxCCT'  => (float) $row->stxCCT,
             'styCCT'  => (float) $row->styCCT,
@@ -27,9 +27,9 @@ class TxtfileDto
             'bkyCCT'  => (float) $row->bkyCCT,
             'bkCCT'   => (int) $row->bkCCT,
             'bkCCTal' => (int) $row->bkCCTal,
-            'dav'     => (float) $row->dav,
-            'ddev'    => (float) $row->ddev,
-            'dcct'    => (int) $row->dcct,
+            'dav'     => (float) $row->Dav,
+            'ddev'    => (float) $row->Ddev,
+            'dcct'    => (int) $row->Dcct,
         ];
     }
 }

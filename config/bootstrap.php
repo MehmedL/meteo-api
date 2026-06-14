@@ -9,6 +9,7 @@ spl_autoload_register(function (string $class): void {
         $baseDir . 'Core/' . $class . '.php',
         $baseDir . 'Dto/' . $class . '.php',
         $baseDir . 'Dao/' . $class . '.php',
+        $baseDir . 'Import/' . $class . '.php',
     ];
 
     foreach ($paths as $path) {
