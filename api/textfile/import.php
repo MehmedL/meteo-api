@@ -6,6 +6,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     JsonResponse::error('Method not allowed', 405);
 }
 
+// Качването е позволено само за логнат потребител.
+Auth::require();
+
 if (!isset($_FILES['file']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
     JsonResponse::error('Не е качен файл или има грешка при качването', 400);
 }

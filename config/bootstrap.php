@@ -2,6 +2,18 @@
 
 require_once __DIR__ . '/cors.php';
 
+// Сесия за автентикация. Стартира се само при реални HTTP заявки
+// (не при CLI скриптове, където няма cookie контекст).
+if (PHP_SAPI !== 'cli' && session_status() !== PHP_SESSION_ACTIVE) {
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    session_start();
+}
+
 spl_autoload_register(function (string $class): void {
     $baseDir = dirname(__DIR__) . '/src/';
 
