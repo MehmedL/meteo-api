@@ -32,6 +32,33 @@ try {
         $dao->updatePassword($record['id'], PasswordHasher::hash($password));
     }
 
+    // Проверка на правата за достъп (usercredentials).
+    // Акаунти без ред в таблицата (напр. служебни) се третират без ограничения.
+    $credDao = new UserCredentialsDao();
+    $creds = $credDao->findByUserId($record['id']);
+
+    if ($creds !== null) {
+        $today = date('Y-m-d');
+
+        if ($creds['from'] !== null && $today < $creds['from']) {
+            JsonResponse::error('Достъпът все още не е активен (от ' . $creds['from'] . ')', 403);
+        }
+
+        if ($creds['to'] !== null && $today > $creds['to']) {
+            JsonResponse::error('Достъпът е изтекъл на ' . $creds['to'], 403);
+        }
+
+        if ($creds['nmax'] !== null && $creds['nused'] >= $creds['nmax']) {
+            JsonResponse::error('Достигнат е максималният брой влизания (' . $creds['nmax'] . ')', 403);
+        }
+
+        // Брояч на влизанията — само при режим "брой влизания".
+        // При времеви прозорец Nused не се следи.
+        if ($creds['nmax'] !== null) {
+            $credDao->incrementUsed($record['id']);
+        }
+    }
+
     Auth::login($record);
 
     JsonResponse::success(UserDto::toPublic($record));
