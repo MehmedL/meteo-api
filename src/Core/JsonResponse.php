@@ -23,4 +23,26 @@ class JsonResponse
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
+
+    /**
+     * Логва пълната грешка (съобщение + trace) server-side и връща на клиента
+     * общо съобщение, без вътрешни детайли (имена на таблици/колони, пътища и т.н.).
+     */
+    public static function exception(
+        Throwable $e,
+        string $publicMessage = 'Възникна вътрешна грешка. Опитайте отново по-късно.',
+        int $code = 500
+    ): never {
+        error_log(sprintf(
+            '[%s] %s in %s:%d%s%s',
+            get_class($e),
+            $e->getMessage(),
+            $e->getFile(),
+            $e->getLine(),
+            PHP_EOL,
+            $e->getTraceAsString()
+        ));
+
+        self::error($publicMessage, $code);
+    }
 }

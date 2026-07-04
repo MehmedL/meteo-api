@@ -11,4 +11,14 @@ if ($user === null) {
     JsonResponse::error('Не сте влезли', 401);
 }
 
-JsonResponse::success($user);
+$public = Auth::publicUser([
+    'id' => $user['id'],
+    'user' => $user['user'],
+]);
+
+if (!$public['accessActive']) {
+    Auth::logout();
+    JsonResponse::error('Достъпът е изтекъл или е изчерпан', 403);
+}
+
+JsonResponse::success($public);

@@ -6,15 +6,15 @@ class VideofileDto
     {
         return [
             'id'       => (int) $row->ID,
-            'filepath' => $row->filepath,
-            'device'   => $row->device,
-            'xGPS'     => (float) $row->xGPS,
-            'yGPS'     => (float) $row->yGPS,
-            'dir'      => $row->dir,
-            'sdate'    => $row->sdate,
-            'imgfile'  => $row->imgfile,
-            'zipfile'  => $row->zipfile,
-            'cammod'   => (int) $row->cammod,
+            'filepath' => $row->Filepath,
+            'device'   => $row->Device,
+            'xGPS'     => $row->xGPS === null ? null : (float) $row->xGPS,
+            'yGPS'     => $row->yGPS === null ? null : (float) $row->yGPS,
+            'dir'      => $row->Dir,
+            'sdata'    => $row->Sdata,
+            'imgfile'  => $row->Imgfile,
+            'zipfile'  => $row->Zipfile,
+            'cammod'   => $row->cammod === null ? null : (int) $row->cammod,
         ];
     }
 }

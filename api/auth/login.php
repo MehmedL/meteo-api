@@ -11,19 +11,23 @@ if (!is_array($input)) {
     JsonResponse::error('Невалиден JSON', 400);
 }
 
-$user = trim((string) ($input['user'] ?? ''));
+$email = Email::fromInput($input);
 $password = (string) ($input['password'] ?? '');
 
-if ($user === '' || $password === '') {
-    JsonResponse::error('Потребител и парола са задължителни', 400);
+if ($email === '' || $password === '') {
+    JsonResponse::error('Имейл и парола са задължителни', 400);
+}
+
+if (!Email::isValid($email)) {
+    JsonResponse::error('Невалиден имейл адрес', 400);
 }
 
 try {
     $dao = new UserDao();
-    $record = $dao->findByUser($user);
+    $record = $dao->findByUser($email);
 
     if ($record === null || !PasswordHasher::verify($password, $record['password'])) {
-        JsonResponse::error('Грешно потребителско име или парола', 401);
+        JsonResponse::error('Грешен имейл или парола', 401);
     }
 
     // Прозрачно мигриране: ако паролата е в чист текст или стар алгоритъм,
@@ -61,7 +65,7 @@ try {
 
     Auth::login($record);
 
-    JsonResponse::success(UserDto::toPublic($record));
+    JsonResponse::success(Auth::publicUser($record));
 } catch (Throwable $e) {
-    JsonResponse::error($e->getMessage(), 500);
+    JsonResponse::exception($e);
 }

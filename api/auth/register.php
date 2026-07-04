@@ -11,16 +11,20 @@ if (!is_array($input)) {
     JsonResponse::error('Невалиден JSON', 400);
 }
 
-$user = trim((string) ($input['user'] ?? ''));
+$email = Email::fromInput($input);
 $password = (string) ($input['password'] ?? '');
 $mode = (string) ($input['mode'] ?? '');
 
-if ($user === '' || $password === '') {
-    JsonResponse::error('Потребител и парола са задължителни', 400);
+if ($email === '' || $password === '') {
+    JsonResponse::error('Имейл и парола са задължителни', 400);
 }
 
-if (mb_strlen($user) > 100) {
-    JsonResponse::error('Потребителското име е твърде дълго (макс. 100 знака)', 400);
+if (!Email::isValid($email)) {
+    JsonResponse::error('Невалиден имейл адрес', 400);
+}
+
+if (mb_strlen($email) > 100) {
+    JsonResponse::error('Имейлът е твърде дълъг (макс. 100 знака)', 400);
 }
 
 if (mb_strlen($password) < 4) {
@@ -62,27 +66,44 @@ if ($mode === 'window') {
 
 try {
     $userDao = new UserDao();
-    if ($userDao->findByUser($user) !== null) {
-        JsonResponse::error('Потребител с това име вече съществува', 409);
-    }
+    $credDao = new UserCredentialsDao();
+    $existing = $userDao->findByUser($email);
 
     $pdo = Database::getConnection();
+
+    if ($existing !== null) {
+        $creds = $credDao->findByUserId($existing['id']);
+
+        if ($creds === null || !$credDao->canReRegister($creds)) {
+            JsonResponse::error('Имейл с този адрес вече е регистриран', 409);
+        }
+
+        $pdo->beginTransaction();
+        try {
+            $userDao->updatePassword($existing['id'], PasswordHasher::hash($password));
+            $credDao->replaceForUser($existing['id'], $from, $to, $nmax);
+            $pdo->commit();
+        } catch (Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+
+        JsonResponse::success(['id' => $existing['id'], 'user' => $email, 'email' => $email], 201);
+    }
+
     $pdo->beginTransaction();
     try {
-        $userId = $userDao->create($user, PasswordHasher::hash($password));
-
-        $credDao = new UserCredentialsDao();
+        $userId = $userDao->create($email, PasswordHasher::hash($password));
         $credDao->createForUser($userId, $from, $to, $nmax);
-
         $pdo->commit();
     } catch (Throwable $e) {
         $pdo->rollBack();
         throw $e;
     }
 
-    JsonResponse::success(['id' => $userId, 'user' => $user], 201);
+    JsonResponse::success(['id' => $userId, 'user' => $email, 'email' => $email], 201);
 } catch (Throwable $e) {
-    JsonResponse::error($e->getMessage(), 500);
+    JsonResponse::exception($e);
 }
 
 function isValidDate(string $value): bool

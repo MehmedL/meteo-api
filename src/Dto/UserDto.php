@@ -12,11 +12,14 @@ class UserDto
     }
 
     /** @param array{id:int,user:string,password?:string} $user */
-    public static function toPublic(array $user): array
+    public static function toPublic(array $user, string $role = 'user', bool $accessActive = true): array
     {
         return [
             'id' => $user['id'],
             'user' => $user['user'],
+            'email' => $user['user'],
+            'role' => $role,
+            'accessActive' => $accessActive,
         ];
     }
 }

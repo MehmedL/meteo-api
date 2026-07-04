@@ -7,8 +7,8 @@ class UserDao extends BaseDao
 
     public function findByUser(string $user): ?array
     {
-        $stmt = $this->db->prepare('SELECT * FROM `user` WHERE `User` = :user LIMIT 1');
-        $stmt->execute(['user' => $user]);
+        $stmt = $this->db->prepare('SELECT * FROM `user` WHERE LOWER(`User`) = LOWER(:user) LIMIT 1');
+        $stmt->execute(['user' => trim($user)]);
         $row = $stmt->fetch();
 
         if (!$row) {
