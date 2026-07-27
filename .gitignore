@@ -17,3 +17,6 @@ desktop.ini
 # Временни / архиви
 *.tmp
 *.bak
+
+# Composer зависимости (инсталират се от composer.lock)
+vendor/

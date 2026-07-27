@@ -1,13 +1,6 @@
 <?php
 
-/**
- * Сигурно качване на файлове (видео, изображение, zip).
- *
- * Проверки: UPLOAD_ERR, реално качен файл, лимит за размер, allowlist по
- * разширение, реален MIME тип (finfo), допълнителна проверка за изображения.
- * Името на файла се генерира сървърно (никога не се доверяваме на подаденото),
- * което предпазва от path traversal и презаписване.
- */
+
 class FileUploader
 {
     private array $config;
@@ -18,8 +11,6 @@ class FileUploader
     }
 
     /**
-     * Съхранява един качен файл от $_FILES.
-     *
      * @param array $file Елемент от $_FILES (напр. $_FILES['video'])
      * @param string $kind 'video' | 'image' | 'zip'
      * @return string Относителният път за запис в базата (напр. "uploads/videos/ab12.mp4")
@@ -68,17 +59,29 @@ class FileUploader
             throw new RuntimeException('Папката за качване не може да бъде създадена.');
         }
 
-        $name = bin2hex(random_bytes(16)) . '.' . $ext;
+        $originalName = pathinfo((string) ($file['name'] ?? ''), PATHINFO_FILENAME);
+        $safeName = preg_replace('/[^A-Za-z0-9_-]+/', '_', $originalName);
+        if ($safeName === '') {
+            $safeName = 'file';
+        }
+
+        $name = $safeName . '.' . $ext;
         $absolute = $targetDir . DIRECTORY_SEPARATOR . $name;
+
+        $suffix = 1;
+        while (file_exists($absolute)) {
+            $name = $safeName . '_' . $suffix . '.' . $ext;
+            $absolute = $targetDir . DIRECTORY_SEPARATOR . $name;
+            $suffix++;
+        }
 
         if (!move_uploaded_file($tmp, $absolute)) {
             throw new RuntimeException("Файлът ({$kind}) не може да бъде записан.");
         }
 
-        return $this->config['storedPrefix'] . '/' . $rules['dir'] . '/' . $name;
+        return $absolute;
     }
 
-    /** Изтрива вече записан файл по относителния му път (за rollback). Безопасно е при липса. */
     public function delete(?string $storedPath): void
     {
         if ($storedPath === null || $storedPath === '') {
@@ -86,16 +89,9 @@ class FileUploader
         }
 
         $base = realpath($this->config['baseDir']);
-        if ($base === false) {
-            return;
-        }
+        $real = realpath($storedPath);
 
-        $relative = ltrim(str_replace($this->config['storedPrefix'], '', $storedPath), '/\\');
-        $candidate = $base . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
-        $real = realpath($candidate);
-
-        // Гарантираме, че пътят е вътре в базовата папка (без traversal).
-        if ($real !== false && str_starts_with($real, $base) && is_file($real)) {
+        if ($base !== false && $real !== false && str_starts_with($real, $base) && is_file($real)) {
             @unlink($real);
         }
     }

@@ -20,8 +20,6 @@ class UserCredentialsDao extends BaseDao
 
     public function createForUser(int $userid, ?string $from, ?string $to, ?int $nmax): void
     {
-        // Nused се пази само при режим "брой влизания" (има зададен Nmax).
-        // При времеви прозорец (Nmax = NULL) броячът също остава NULL.
         $nused = $nmax === null ? null : 0;
 
         $stmt = $this->db->prepare(
@@ -43,7 +41,6 @@ class UserCredentialsDao extends BaseDao
         $stmt->execute(['uid' => $userid]);
     }
 
-    /** Акаунти без credentials (напр. администратори) се третират като без ограничение. */
     public function isAccessUsable(?array $creds): bool
     {
         if ($creds === null) {
@@ -67,7 +64,6 @@ class UserCredentialsDao extends BaseDao
         return true;
     }
 
-    /** Дали изтекъл прозорец или изчерпани влизания позволяват нова регистрация със същия имейл. */
     public function canReRegister(array $creds): bool
     {
         $today = date('Y-m-d');

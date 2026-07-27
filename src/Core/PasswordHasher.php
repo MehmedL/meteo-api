@@ -17,7 +17,6 @@ class PasswordHasher
             return password_verify($plain, $stored);
         }
 
-        // Legacy: парола в чист текст — сравнение, устойчиво на timing атаки.
         return hash_equals($stored, $plain);
     }
 

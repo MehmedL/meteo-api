@@ -1,15 +1,8 @@
 <?php
 
-// Конфигурация за качване на файлове (видео, изображение, zip).
-// baseDir е абсолютният път на диска; storedPrefix е това, което се пази в базата.
 return [
-    // Абсолютна базова папка за качванията.
     'baseDir'      => dirname(__DIR__) . DIRECTORY_SEPARATOR . 'uploads',
 
-    // Префикс, който се записва в базата пред относителния път (с наклонени черти напред).
-    'storedPrefix' => 'uploads',
-
-    // Дефиниции по вид файл.
     'kinds' => [
         'video' => [
             'dir'     => 'videos',
@@ -21,7 +14,7 @@ return [
                 'video/x-msvideo',
                 'video/x-matroska',
                 'video/webm',
-                'application/octet-stream', // finfo често връща това за някои видео контейнери
+                'application/octet-stream', 
             ],
         ],
         'image' => [

@@ -24,10 +24,6 @@ class JsonResponse
         exit;
     }
 
-    /**
-     * Логва пълната грешка (съобщение + trace) server-side и връща на клиента
-     * общо съобщение, без вътрешни детайли (имена на таблици/колони, пътища и т.н.).
-     */
     public static function exception(
         Throwable $e,
         string $publicMessage = 'Възникна вътрешна грешка. Опитайте отново по-късно.',

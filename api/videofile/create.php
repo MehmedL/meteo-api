@@ -13,10 +13,10 @@ const MAX_PATCH_INDEX = 8;
 const TXT_MAX_SIZE = 20 * 1024 * 1024; // 20 MB
 
 /** @return bool */
-function vf_isValidDate(string $value): bool
+function vf_isValidDateTime(string $value): bool
 {
-    $d = DateTime::createFromFormat('Y-m-d', $value);
-    return $d !== false && $d->format('Y-m-d') === $value;
+    $d = DateTime::createFromFormat('Y-m-d H:i:s', $value);
+    return $d !== false && $d->format('Y-m-d H:i:s') === $value;
 }
 
 /** Проверява качен txt файл (не се пази на диска, само се парсва). */
@@ -72,10 +72,33 @@ if ($dir !== '' && !in_array($dir, ALLOWED_DIRECTIONS, true)) {
 $dir = $dir === '' ? null : $dir;
 
 $sdata = isset($payload['sdata']) ? trim((string) $payload['sdata']) : '';
-if ($sdata !== '' && !vf_isValidDate($sdata)) {
-    JsonResponse::error('Невалидна дата на записа', 400);
+if ($sdata !== '' && !vf_isValidDateTime($sdata)) {
+    JsonResponse::error('Невалидна дата и час на записа', 400);
 }
 $sdata = $sdata === '' ? null : $sdata;
+
+// --- Задължителни полета ---
+if (!vf_hasUpload('video')) {
+    JsonResponse::error('Видео файлът е задължителен', 400);
+}
+if (!vf_hasUpload('image')) {
+    JsonResponse::error('Изображението е задължително', 400);
+}
+if (!vf_hasUpload('zip')) {
+    JsonResponse::error('Zip файлът е задължителен', 400);
+}
+if ($device === null) {
+    JsonResponse::error('Устройството е задължително', 400);
+}
+if ($xGPS === null || $yGPS === null) {
+    JsonResponse::error('GPS координатите (X и Y) са задължителни', 400);
+}
+if ($dir === null) {
+    JsonResponse::error('Посоката е задължителна', 400);
+}
+if ($sdata === null) {
+    JsonResponse::error('Датата и часът на записа са задължителни', 400);
+}
 
 $patchesInput = isset($payload['patches']) && is_array($payload['patches']) ? $payload['patches'] : [];
 
@@ -121,6 +144,17 @@ try {
             'rows'      => [],
             'hasTxt'    => vf_hasUpload("patch_txt_{$patchIndex}"),
         ];
+    }
+
+    $hasPhenomenonSelected = false;
+    foreach ($patches as $p) {
+        if ($p['phenomena'] !== []) {
+            $hasPhenomenonSelected = true;
+            break;
+        }
+    }
+    if (!$hasPhenomenonSelected) {
+        JsonResponse::error('Трябва да изберете поне едно явление в поне един пач', 400);
     }
 } catch (Throwable $e) {
     JsonResponse::exception($e);

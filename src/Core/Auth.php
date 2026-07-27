@@ -5,10 +5,8 @@ class Auth
     private const ROLE_ADMIN = 'admin';
     private const ROLE_USER = 'user';
 
-    /** Записва логнатия потребител в сесията (truth-source на сървъра). */
     public static function login(array $user): void
     {
-        // Нов session id след вход — защита срещу session fixation.
         session_regenerate_id(true);
         $_SESSION['userId'] = (int) $user['id'];
         $_SESSION['user'] = (string) $user['user'];
@@ -32,7 +30,6 @@ class Auth
             'user' => (string) ($_SESSION['user'] ?? ''),
         ];
 
-        // Преизчисляваме ролята при липса или при промяна в config/admins.php.
         $role = self::resolveRole($user);
         $_SESSION['role'] = $role;
         $user['role'] = $role;
@@ -51,7 +48,6 @@ class Auth
         return UserDto::toPublic($record, $role, $accessActive);
     }
 
-    /** Прекъсва изпълнението с 401, ако няма логнат потребител. */
     public static function require(): void
     {
         if (!self::check()) {
@@ -59,7 +55,6 @@ class Auth
         }
     }
 
-    /** Прекъсва изпълнението с 403, ако потребителят не е администратор. */
     public static function requireAdmin(): void
     {
         $user = self::user();

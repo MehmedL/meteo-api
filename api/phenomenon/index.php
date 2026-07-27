@@ -6,7 +6,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     JsonResponse::error('Method not allowed', 405);
 }
 
-Auth::requireAdmin();
+Auth::require();
 
 try {
     $dao = new PhenomenonDao();
