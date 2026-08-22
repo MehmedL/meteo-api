@@ -51,14 +51,14 @@ if ($mode === 'window') {
         JsonResponse::error('Началната дата трябва да е преди крайната', 400);
     }
 
-    $maxTo = date('Y-m-d', strtotime($from . ' +1 year'));
+    $maxTo = date('Y-m-d', strtotime($from . ' +10 days'));
     if ($to > $maxTo) {
-        JsonResponse::error('Прозорецът на достъп не може да е по-дълъг от 1 година', 400);
+        JsonResponse::error('Прозорецът на достъп не може да е по-дълъг от 10 дни', 400);
     }
 } else {
     $nmax = (int) ($input['nmax'] ?? 0);
-    if ($nmax < 1 || $nmax > 100000) {
-        JsonResponse::error('Броят влизания трябва да е между 1 и 100000', 400);
+    if ($nmax < 1 || $nmax > 10) {
+        JsonResponse::error('Броят влизания трябва да е между 1 и 10', 400);
     }
     // При режим "брой влизания" акаунтът е активен от днес, без краен срок.
     $from = date('Y-m-d');
@@ -75,7 +75,7 @@ try {
         $creds = $credDao->findByUserId($existing['id']);
 
         if ($creds === null || !$credDao->canReRegister($creds)) {
-            JsonResponse::error('Имейл с този адрес вече е регистриран', 409);
+            JsonResponse::error('Имейлът вече е регистриран', 409);
         }
 
         $pdo->beginTransaction();

@@ -24,6 +24,7 @@ class VideofileSearchDto
             'deviceName' => $row['DeviceName'],
             'cammodName' => $row['CammodName'],
             'phenomena'  => $phenomena,
+            'hasImage'   => !empty($row['Imgfile']),
             'hasVideo'   => !empty($row['Filepath']),
             'hasZip'     => !empty($row['Zipfile']),
         ];

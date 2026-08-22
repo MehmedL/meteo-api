@@ -57,7 +57,7 @@ class UserCredentialsDao extends BaseDao
             return false;
         }
 
-        if ($creds['nmax'] !== null && $creds['nused'] >= $creds['nmax']) {
+        if ($creds['nmax'] !== null && $creds['nused'] > $creds['nmax']) {
             return false;
         }
 
