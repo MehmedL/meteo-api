@@ -11,6 +11,27 @@ Auth::requireAdmin();
 const ALLOWED_DIRECTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 const MAX_PATCH_INDEX = 8;
 const TXT_MAX_SIZE = 20 * 1024 * 1024; // 20 MB
+const UPLOAD_RATE_LIMIT_MAX = 15;
+const UPLOAD_RATE_LIMIT_WINDOW = 600; // 10 минути
+
+function vf_enforceUploadRateLimit(): void
+{
+    $now = time();
+    $attempts = $_SESSION['uploadAttempts'] ?? [];
+    $attempts = array_values(array_filter(
+        $attempts,
+        static fn ($t) => $t > $now - UPLOAD_RATE_LIMIT_WINDOW
+    ));
+
+    if (count($attempts) >= UPLOAD_RATE_LIMIT_MAX) {
+        JsonResponse::error('Твърде много опити за качване. Опитайте отново след малко.', 429);
+    }
+
+    $attempts[] = $now;
+    $_SESSION['uploadAttempts'] = $attempts;
+}
+
+vf_enforceUploadRateLimit();
 
 /** @return bool */
 function vf_isValidDateTime(string $value): bool
@@ -43,7 +64,6 @@ function vf_hasUpload(string $field): bool
         && ($_FILES[$field]['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE;
 }
 
-// --- Разчитане и валидация на метаданните (payload) ---
 $payload = json_decode((string) ($_POST['payload'] ?? ''), true);
 if (!is_array($payload)) {
     JsonResponse::error('Липсва или невалиден payload', 400);
@@ -77,7 +97,6 @@ if ($sdata !== '' && !vf_isValidDateTime($sdata)) {
 }
 $sdata = $sdata === '' ? null : $sdata;
 
-// --- Задължителни полета ---
 if (!vf_hasUpload('video')) {
     JsonResponse::error('Видео файлът е задължителен', 400);
 }
@@ -117,7 +136,6 @@ try {
         $validPhenom[(int) $ph['id']] = true;
     }
 
-    // Нормализиране на пачовете: само валиден индекс 0..8; празни (без явления и без txt) се прескачат.
     $patches = [];
     foreach ($patchesInput as $entry) {
         if (!is_array($entry)) {
@@ -160,7 +178,6 @@ try {
     JsonResponse::exception($e);
 }
 
-// --- Качване на файловете + парсване на txt ---
 $uploader = new FileUploader();
 $uploaded = ['video' => null, 'image' => null, 'zip' => null];
 
@@ -187,7 +204,6 @@ try {
             $patch['rows'] = TextfileImporter::parse($content);
         }
 
-        // Прескачаме напълно празен пач (без явления и без txt редове).
         if ($patch['phenomena'] === [] && $patch['rows'] === []) {
             continue;
         }
@@ -216,13 +232,11 @@ try {
 
     JsonResponse::success($result, 201);
 } catch (RuntimeException $e) {
-    // Умишлени, четими за потребителя съобщения за валидация (файлове/txt).
     foreach ($uploaded as $path) {
         $uploader->delete($path);
     }
     JsonResponse::error($e->getMessage(), 400);
 } catch (Throwable $e) {
-    // Неочаквана грешка (напр. БД) — не показваме вътрешни детайли на клиента.
     foreach ($uploaded as $path) {
         $uploader->delete($path);
     }

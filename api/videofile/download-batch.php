@@ -14,7 +14,6 @@ Auth::require();
 const DOWNLOAD_BATCH_MAX_ITEMS = 30;
 const DOWNLOAD_BATCH_MAX_CONCURRENT = 3;
 
-// Ключове по VideofileDto::fromRow — огледало на ALLOWED_TYPES в download.php, с добавен image.
 const DOWNLOAD_BATCH_ALLOWED_TYPES = [
     'image' => 'imgfile',
     'video' => 'filepath',
@@ -51,9 +50,6 @@ if ($requested === []) {
     JsonResponse::error('Невалидна заявка', 400);
 }
 
-// --- Ограничение на едновременните архивирания, за да не претоварят сървъра. ---
-// Файлов семафор: DOWNLOAD_BATCH_MAX_CONCURRENT "слота", всеки заявка заема
-// един до края на изпълнението си. Ако няма свободен слот - 429.
 $locksDir = dirname(__DIR__, 2) . '/storage/locks';
 if (!is_dir($locksDir)) {
     mkdir($locksDir, 0775, true);
@@ -75,8 +71,6 @@ if ($lockHandle === null) {
     JsonResponse::error('Сървърът обработва твърде много изтегляния в момента. Опитайте отново след малко.', 429);
 }
 
-// register_shutdown_function освобождава слота дори при изключение, timeout
-// или прекъснат от клиента request - не само по нормалния изходен път.
 register_shutdown_function(static function () use ($lockHandle) {
     flock($lockHandle, LOCK_UN);
     fclose($lockHandle);
@@ -84,10 +78,6 @@ register_shutdown_function(static function () use ($lockHandle) {
 
 set_time_limit(0);
 
-/**
- * Записите в базата пазят пътя ту абсолютен, ту относителен спрямо корена на
- * проекта (стари vs нови импорти) - пробваме и двата варианта.
- */
 function download_batch_resolvePath(string $storedPath, string $base, string $projectRoot): ?string
 {
     $real = realpath($storedPath);
@@ -109,9 +99,6 @@ try {
     $uploadsConfig = require $projectRoot . '/config/uploads.php';
     $base = realpath($uploadsConfig['baseDir']);
 
-    // Първо резолвваме кои от заявените файлове реално съществуват на диска,
-    // за да можем да съобщим на клиента колко са прескочени - иначе липсващи
-    // файлове тихо отпадат от архива без потребителят да разбере защо.
     $files = [];
     $usedNames = [];
     $skipped = 0;
@@ -129,7 +116,8 @@ try {
             continue;
         }
 
-        $entryName = "{$item['id']}_{$item['type']}_" . basename($real);
+        $cleanName = preg_replace('/^[0-9a-f]{16}__/', '', basename($real));
+        $entryName = "{$item['id']}_{$item['type']}_" . $cleanName;
         if (isset($usedNames[$entryName])) {
             $entryName = "{$item['id']}_{$item['type']}_" . uniqid() . '_' . basename($real);
         }

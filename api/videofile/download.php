@@ -8,7 +8,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 Auth::require();
 
-// Ключове по VideofileDto::fromRow (findById връща вече оформено DTO).
 const ALLOWED_TYPES = ['video' => 'filepath', 'zip' => 'zipfile'];
 
 $id = (int) ($_GET['id'] ?? 0);
@@ -35,7 +34,6 @@ try {
     $uploadsConfig = require dirname(__DIR__, 2) . '/config/uploads.php';
     $base = realpath($uploadsConfig['baseDir']);
 
-    // $storedPath вече е пълният път на диска.
     $real = realpath($storedPath);
 
     if ($base === false || $real === false || !str_starts_with($real, $base) || !is_file($real)) {
@@ -51,7 +49,7 @@ try {
         }
     }
 
-    $filename = basename($real);
+    $filename = preg_replace('/^[0-9a-f]{16}__/', '', basename($real));
 
     header('Content-Type: ' . $mime);
     header("Content-Disposition: {$mode}; filename=\"{$filename}\"");

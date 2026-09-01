@@ -54,6 +54,8 @@ class FileUploader
             throw new RuntimeException('Файлът не е валидно изображение.');
         }
 
+        $this->verifySignature($tmp, $kind, $ext);
+
         $targetDir = $this->config['baseDir'] . DIRECTORY_SEPARATOR . $rules['dir'];
         if (!is_dir($targetDir) && !@mkdir($targetDir, 0775, true) && !is_dir($targetDir)) {
             throw new RuntimeException('Папката за качване не може да бъде създадена.');
@@ -65,18 +67,24 @@ class FileUploader
             $safeName = 'file';
         }
 
-        $name = $safeName . '.' . $ext;
+        $prefix = bin2hex(random_bytes(8));
+
+        $name = $prefix . '__' . $safeName . '.' . $ext;
         $absolute = $targetDir . DIRECTORY_SEPARATOR . $name;
 
         $suffix = 1;
         while (file_exists($absolute)) {
-            $name = $safeName . '_' . $suffix . '.' . $ext;
+            $name = $prefix . '__' . $safeName . '_' . $suffix . '.' . $ext;
             $absolute = $targetDir . DIRECTORY_SEPARATOR . $name;
             $suffix++;
         }
 
         if (!move_uploaded_file($tmp, $absolute)) {
             throw new RuntimeException("Файлът ({$kind}) не може да бъде записан.");
+        }
+
+        if ($kind === 'zip') {
+            $this->assertSafeZip($absolute);
         }
 
         return $absolute;
@@ -106,6 +114,95 @@ class FileUploader
         $mime = $finfo->file($path);
 
         return $mime !== false ? $mime : 'application/octet-stream';
+    }
+
+    private function verifySignature(string $path, string $kind, string $ext): void
+    {
+        if ($kind === 'image') {
+            return; // вече покрито от точния MIME whitelist + getimagesize().
+        }
+
+        $head = @file_get_contents($path, false, null, 0, 16);
+        if ($head === false || $head === '') {
+            throw new RuntimeException('Файлът не може да бъде прочетен за проверка на съдържанието.');
+        }
+
+        $ok = $kind === 'zip' ? $this->looksLikeZip($head) : $this->looksLikeVideo($head);
+
+        if (!$ok) {
+            throw new RuntimeException("Съдържанието на файла не отговаря на заявения формат ({$kind}).");
+        }
+    }
+
+    private function looksLikeZip(string $head): bool
+    {
+        $signature = substr($head, 0, 4);
+
+        return in_array($signature, ["PK\x03\x04", "PK\x05\x06", "PK\x07\x08"], true);
+    }
+
+    private function looksLikeVideo(string $head): bool
+    {
+        if (substr($head, 4, 4) === 'ftyp') {
+            return true;
+        }
+
+        if (substr($head, 0, 4) === 'RIFF' && substr($head, 8, 4) === 'AVI ') {
+            return true;
+        }
+
+        if (substr($head, 0, 4) === "\x1A\x45\xDF\xA3") {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function assertSafeZip(string $absolute): void
+    {
+        $maxEntries = 20000;
+        $maxUncompressedTotal = 5 * 1024 * 1024 * 1024; // 5 GB
+
+        $zip = new ZipArchive();
+        if ($zip->open($absolute) !== true) {
+            @unlink($absolute);
+            throw new RuntimeException('Невалиден zip архив.');
+        }
+
+        $count = $zip->numFiles;
+        if ($count > $maxEntries) {
+            $zip->close();
+            @unlink($absolute);
+            throw new RuntimeException('Zip архивът съдържа твърде много файлове.');
+        }
+
+        $totalUncompressed = 0;
+        for ($i = 0; $i < $count; $i++) {
+            $stat = $zip->statIndex($i);
+            if ($stat === false) {
+                continue;
+            }
+
+            $name = (string) $stat['name'];
+            if (
+                str_contains($name, '..')
+                || str_starts_with($name, '/')
+                || preg_match('#^[A-Za-z]:[\\\\/]#', $name) === 1
+            ) {
+                $zip->close();
+                @unlink($absolute);
+                throw new RuntimeException('Zip архивът съдържа недопустим път: ' . $name);
+            }
+
+            $totalUncompressed += (int) $stat['size'];
+            if ($totalUncompressed > $maxUncompressedTotal) {
+                $zip->close();
+                @unlink($absolute);
+                throw new RuntimeException('Zip архивът е твърде голям след разархивиране.');
+            }
+        }
+
+        $zip->close();
     }
 
     private function assertUploadOk(int $error, string $kind): void
